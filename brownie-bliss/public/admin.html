@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Panel — Brownie Bliss</title>
+  <link rel="stylesheet" href="style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+</head>
+<body class="admin-page">
+
+<!-- ADMIN NAV -->
+<nav class="admin-nav">
+  <div style="display:flex;align-items:center;gap:12px">
+    <span style="font-size:24px">🍫</span>
+    <div>
+      <div class="brand-name" style="font-family:'Playfair Display',serif">Brownie Bliss</div>
+      <div style="font-size:11px;opacity:0.6;letter-spacing:1px">Admin Panel</div>
+    </div>
+  </div>
+  <div style="display:flex;align-items:center;gap:16px">
+    <span class="admin-badge">ADMIN</span>
+    <a href="index.html" style="color:rgba(253,246,237,0.7);font-size:13px;text-decoration:none;">← View Shop</a>
+    <button onclick="refreshOrders()" style="background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:white;padding:6px 14px;border-radius:6px;cursor:pointer;font-size:13px;">⟳ Refresh</button>
+  </div>
+</nav>
+
+<div class="admin-body">
+
+  <!-- STATS -->
+  <div class="stats-grid" id="statsGrid">
+    <div class="stat-card">
+      <div class="stat-label">Total Orders <span class="stat-icon">📋</span></div>
+      <div class="stat-value" id="statTotal">—</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Pending Orders <span class="stat-icon">⏳</span></div>
+      <div class="stat-value" id="statPending">—</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Confirmed / Paid <span class="stat-icon">✅</span></div>
+      <div class="stat-value" id="statPaid">—</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Total Revenue <span class="stat-icon">💰</span></div>
+      <div class="stat-value" id="statRevenue">—</div>
+    </div>
+  </div>
+
+  <!-- ORDERS TABLE -->
+  <div class="orders-panel">
+    <div class="panel-head">
+      <h2>All Orders</h2>
+      <div class="orders-filter">
+        <button class="of-btn active" onclick="filterOrders('all',this)">All</button>
+        <button class="of-btn" onclick="filterOrders('pending',this)">⏳ Pending</button>
+        <button class="of-btn" onclick="filterOrders('confirmed',this)">✅ Confirmed</button>
+        <button class="of-btn" onclick="filterOrders('delivered',this)">🚚 Delivered</button>
+      </div>
+    </div>
+    <div style="overflow-x:auto">
+      <table class="orders-table">
+        <thead>
+          <tr>
+            <th>Order ID</th>
+            <th>Customer</th>
+            <th>Items</th>
+            <th>Total</th>
+            <th>Payment</th>
+            <th>Order Status</th>
+            <th>Date & Time</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="ordersTableBody">
+          <tr><td colspan="8" style="text-align:center;padding:40px;color:#aaa;">Loading orders...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<!-- ORDER DETAIL MODAL -->
+<div class="detail-modal-overlay" id="detailOverlay">
+  <div class="detail-modal">
+    <div class="detail-modal-head">
+      <div>
+        <h3 id="detailOrderId">Order Details</h3>
+        <div id="detailDate" style="font-size:12px;color:#888;margin-top:4px"></div>
+      </div>
+      <button onclick="closeDetail()" style="background:none;border:none;font-size:20px;cursor:pointer;color:#888">✕</button>
+    </div>
+    <div class="detail-modal-body" id="detailBody"></div>
+    <div class="detail-modal-foot" id="detailFoot"></div>
+  </div>
+</div>
+
+<!-- RECEIPT MODAL -->
+<div class="detail-modal-overlay" id="receiptOverlay">
+  <div class="detail-modal">
+    <div class="detail-modal-head">
+      <h3>🧾 Order Receipt</h3>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button onclick="printReceipt()" style="background:var(--brown);color:white;border:none;padding:7px 16px;border-radius:6px;font-size:13px;cursor:pointer;font-weight:600">🖨️ Print</button>
+        <button onclick="closeReceipt()" style="background:none;border:none;font-size:20px;cursor:pointer;color:#888">✕</button>
+      </div>
+    </div>
+    <div class="detail-modal-body" id="receiptBody"></div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+const API = 'http://localhost:3000/api';
+let allOrders = [];
+let currentFilter = 'all';
+
+// ─── LOAD STATS ────────────────────────────────────────────────────────────────
+async function loadStats() {
+  try {
+    const res = await fetch(`${API}/stats`);
+    const data = await res.json();
+    if (data.success) {
+      const s = data.stats;
+      document.getElementById('statTotal').textContent = s.total_orders || 0;
+      document.getElementById('statPending').textContent = s.pending_orders || 0;
+      document.getElementById('statPaid').textContent = s.paid_orders || 0;
+      document.getElementById('statRevenue').textContent = `₹${(s.total_revenue || 0).toLocaleString('en-IN')}`;
+    }
+  } catch(e) { console.error(e); }
+}
+
+// ─── LOAD ORDERS ───────────────────────────────────────────────────────────────
+async function loadOrders() {
+  try {
+    const res = await fetch(`${API}/orders`);
+    const data = await res.json();
+    if (data.success) {
+      allOrders = data.orders;
+      renderOrders(currentFilter);
+    }
+  } catch(e) {
+    document.getElementById('ordersTableBody').innerHTML =
+      '<tr><td colspan="8" style="text-align:center;padding:40px;color:#e53e3e">⚠️ Cannot connect to server. Make sure the backend is running.</td></tr>';
+  }
+}
+
+function refreshOrders() {
+  loadStats();
+  loadOrders();
+  showToast('Refreshed!');
+}
+
+function filterOrders(filter, el) {
+  currentFilter = filter;
+  document.querySelectorAll('.of-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  renderOrders(filter);
+}
+
+function renderOrders(filter) {
+  let orders = allOrders;
+  if (filter !== 'all') {
+    orders = allOrders.filter(o => o.status === filter || o.payment_status === filter);
+  }
+
+  const tbody = document.getElementById('ordersTableBody');
+  if (orders.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:40px;color:#aaa">No orders found</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = orders.map(o => {
+    const items = Array.isArray(o.items) ? o.items : JSON.parse(o.items || '[]');
+    const itemsSummary = items.map(i => `${i.emoji||'🍫'}${i.name} ×${i.qty}`).join(', ');
+    const dt = new Date(o.created_at);
+    const dateStr = dt.toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric' });
+    const timeStr = dt.toLocaleTimeString('en-IN', { hour:'2-digit', minute:'2-digit' });
+
+    return `<tr>
+      <td><div class="order-id">${o.order_id}</div></td>
+      <td>
+        <div class="customer-name">${o.customer_name}</div>
+        <div class="customer-phone">📱 +91 ${o.phone}</div>
+      </td>
+      <td style="font-size:12px;max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${itemsSummary}</td>
+      <td style="font-weight:700;color:var(--brown-light)">₹${o.total.toLocaleString('en-IN')}</td>
+      <td><span class="status-pill ${o.payment_status==='paid'?'pay-paid':'pay-unpaid'}">${o.payment_status==='paid'?'✅ Paid':'⏳ Unpaid'}</span></td>
+      <td>
+        <select class="status-select" onchange="updateStatus('${o.order_id}',this.value)" 
+          style="font-size:12px;padding:4px 8px;border:1px solid #ddd;border-radius:6px;cursor:pointer">
+          <option value="pending" ${o.status==='pending'?'selected':''}>⏳ Pending</option>
+          <option value="confirmed" ${o.status==='confirmed'?'selected':''}>✅ Confirmed</option>
+          <option value="preparing" ${o.status==='preparing'?'selected':''}>👨‍🍳 Preparing</option>
+          <option value="delivered" ${o.status==='delivered'?'selected':''}>🚚 Delivered</option>
+          <option value="cancelled" ${o.status==='cancelled'?'selected':''}>❌ Cancelled</option>
+        </select>
+      </td>
+      <td style="font-size:12px;color:#888">${dateStr}<br>${timeStr}</td>
+      <td>
+        <div class="action-row">
+          ${o.payment_status !== 'paid' ? `<button class="btn-confirm" onclick="confirmPayment('${o.order_id}')">✅ Confirm Payment</button>` : `<button class="btn-view" onclick="viewReceipt('${o.order_id}')">🧾 Receipt</button>`}
+          <button class="btn-view" onclick="viewOrder('${o.order_id}')">👁 View</button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+// ─── CONFIRM PAYMENT ───────────────────────────────────────────────────────────
+async function confirmPayment(orderId) {
+  if (!confirm(`Confirm payment received for order ${orderId}?`)) return;
+
+  try {
+    const res = await fetch(`${API}/orders/${orderId}/confirm-payment`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ notes: 'Payment confirmed via WhatsApp' })
+    });
+    const data = await res.json();
+    if (data.success) {
+      showToast('✅ Payment confirmed!');
+      loadStats();
+      loadOrders();
+      // Ask to view receipt
+      setTimeout(() => {
+        if (confirm('Payment confirmed! 🎉\nGenerate receipt for customer?')) {
+          viewReceipt(orderId);
+        }
+      }, 500);
+    }
+  } catch(e) {
+    showToast('Error confirming payment');
+  }
+}
+
+// ─── UPDATE STATUS ─────────────────────────────────────────────────────────────
+async function updateStatus(orderId, status) {
+  try {
+    await fetch(`${API}/orders/${orderId}/status`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status })
+    });
+    showToast(`Status updated to "${status}"`);
+    loadOrders();
+  } catch(e) {
+    showToast('Error updating status');
+  }
+}
+
+// ─── VIEW ORDER DETAIL ─────────────────────────────────────────────────────────
+function viewOrder(orderId) {
+  const order = allOrders.find(o => o.order_id === orderId);
+  if (!order) return;
+
+  const items = Array.isArray(order.items) ? order.items : JSON.parse(order.items || '[]');
+  const dt = new Date(order.created_at);
+
+  document.getElementById('detailOrderId').textContent = `Order: ${order.order_id}`;
+  document.getElementById('detailDate').textContent = dt.toLocaleString('en-IN', { dateStyle:'full', timeStyle:'short' });
+
+  document.getElementById('detailBody').innerHTML = `
+    <div class="info-grid">
+      <div class="info-item"><label>Customer Name</label><span>${order.customer_name}</span></div>
+      <div class="info-item"><label>Phone</label><span>+91 ${order.phone}</span></div>
+      <div class="info-item" style="grid-column:span 2"><label>Delivery Address</label><span>${order.address}, ${order.city} - ${order.pincode}</span></div>
+      <div class="info-item"><label>Payment</label><span class="status-pill ${order.payment_status==='paid'?'pay-paid':'pay-unpaid'}" style="font-size:12px">${order.payment_status==='paid'?'✅ Paid':'⏳ Unpaid'}</span></div>
+      <div class="info-item"><label>Order Status</label><span>${order.status}</span></div>
+      ${order.confirmed_at ? `<div class="info-item" style="grid-column:span 2"><label>Confirmed At</label><span>${new Date(order.confirmed_at).toLocaleString('en-IN')}</span></div>` : ''}
+    </div>
+    <div class="items-list">
+      <h4>Items Ordered</h4>
+      ${items.map(i => `<div class="item-row"><span>${i.emoji||'🍫'} ${i.name} × ${i.qty}</span><span>₹${i.price * i.qty}</span></div>`).join('')}
+      <div class="items-total"><span>Total</span><span>₹${order.total.toLocaleString('en-IN')}</span></div>
+    </div>
+  `;
+
+  document.getElementById('detailFoot').innerHTML = order.payment_status !== 'paid'
+    ? `<button class="btn-confirm" style="width:100%;padding:12px;font-size:14px" onclick="confirmPayment('${order.order_id}');closeDetail()">✅ Confirm Payment Received</button>`
+    : `<button class="btn-view" style="width:100%;padding:12px;font-size:14px" onclick="closeDetail();viewReceipt('${order.order_id}')">🧾 Generate Receipt</button>`;
+
+  document.getElementById('detailOverlay').classList.add('open');
+}
+
+function closeDetail() { document.getElementById('detailOverlay').classList.remove('open'); }
+
+// ─── RECEIPT ───────────────────────────────────────────────────────────────────
+function viewReceipt(orderId) {
+  const order = allOrders.find(o => o.order_id === orderId);
+  if (!order) return;
+
+  const items = Array.isArray(order.items) ? order.items : JSON.parse(order.items || '[]');
+  const orderDate = new Date(order.created_at).toLocaleDateString('en-IN', { day:'2-digit', month:'long', year:'numeric' });
+  const confirmedDate = order.confirmed_at ? new Date(order.confirmed_at).toLocaleString('en-IN', { dateStyle:'medium', timeStyle:'short' }) : '—';
+
+  document.getElementById('receiptBody').innerHTML = `
+    <div class="receipt-container">
+      <div class="receipt-head">
+        <div style="font-size:36px;margin-bottom:8px">🍫</div>
+        <h2>Brownie Bliss</h2>
+        <p>Baked with Love · Official Receipt</p>
+      </div>
+      <div class="receipt-body">
+        <div class="receipt-row"><span>Receipt No.</span><strong>${order.order_id}</strong></div>
+        <div class="receipt-row"><span>Date</span><strong>${orderDate}</strong></div>
+        <hr class="receipt-divider">
+        <div class="receipt-row"><span>Customer</span><strong>${order.customer_name}</strong></div>
+        <div class="receipt-row"><span>Phone</span><strong>+91 ${order.phone}</strong></div>
+        <div class="receipt-row"><span>Delivery Address</span><strong>${order.address}, ${order.city} - ${order.pincode}</strong></div>
+        <hr class="receipt-divider">
+        ${items.map(i => `
+          <div class="receipt-row">
+            <span>${i.emoji||'🍫'} ${i.name} × ${i.qty}</span>
+            <strong>₹${(i.price * i.qty).toLocaleString('en-IN')}</strong>
+          </div>
+        `).join('')}
+        <div class="receipt-row total"><span>TOTAL AMOUNT</span><strong>₹${order.total.toLocaleString('en-IN')}</strong></div>
+        <hr class="receipt-divider">
+        <div class="receipt-row"><span>Payment Status</span><strong style="color:#198754">✅ PAID</strong></div>
+        <div class="receipt-row"><span>Payment Confirmed</span><strong>${confirmedDate}</strong></div>
+        <div style="text-align:center;margin-top:16px">
+          <div class="receipt-stamp">PAID</div>
+        </div>
+      </div>
+      <div class="receipt-foot">
+        Thank you for choosing Brownie Bliss! 🍫<br>
+        We hope you enjoy every bite. See you again!<br>
+        <span style="opacity:0.5;font-size:11px">contact@browniebliss.in · +91 98765 43210</span>
+      </div>
+    </div>
+  `;
+
+  document.getElementById('receiptOverlay').classList.add('open');
+}
+
+function closeReceipt() { document.getElementById('receiptOverlay').classList.remove('open'); }
+
+function printReceipt() {
+  const content = document.getElementById('receiptBody').innerHTML;
+  const win = window.open('', '_blank', 'width=560,height=800');
+  win.document.write(`
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>Receipt — Brownie Bliss</title>
+      <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=DM+Sans:wght@400;600&display=swap" rel="stylesheet">
+      <link rel="stylesheet" href="style.css">
+      <style>body{background:white;padding:20px} @media print{.no-print{display:none}}</style>
+    </head>
+    <body>${content}<br><button class="no-print" onclick="window.print()" style="display:block;margin:16px auto;padding:10px 24px;background:#3b1a08;color:white;border:none;border-radius:6px;cursor:pointer;font-size:14px;font-weight:600">🖨️ Print Receipt</button></body>
+    </html>
+  `);
+  win.document.close();
+}
+
+// ─── TOAST ─────────────────────────────────────────────────────────────────────
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// ─── INIT ──────────────────────────────────────────────────────────────────────
+loadStats();
+loadOrders();
+
+// Auto refresh every 30 seconds
+setInterval(() => { loadStats(); loadOrders(); }, 30000);
+</script>
+</body>
+</html>
