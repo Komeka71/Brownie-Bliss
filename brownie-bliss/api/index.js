@@ -4,6 +4,7 @@ const cors = require('cors');
 const path = require('path');
 const axios = require('axios');
 require('dotenv').config();
+const serverless = require('serverless-http');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -424,4 +425,4 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, '../public/index.html'));
 });
 // ─── START ─────────────────────────────────────────────────────────────────────
-module.exports = app;
+module.exports = serverless(app);
