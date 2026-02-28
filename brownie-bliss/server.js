@@ -420,8 +420,12 @@ app.get('/api/stats', async (req, res) => {
 });
 
 // ─── START ─────────────────────────────────────────────────────────────────────
-app.listen(PORT, () => {
-  console.log(`\n🍫 Brownie Bliss Server running at http://localhost:${PORT}`);
-  console.log(`📋 Admin Panel: http://localhost:${PORT}/admin.html`);
-  console.log(`🛍️  Shop:        http://localhost:${PORT}/index.html\n`);
-});
+if (process.env.VERCEL) {
+  module.exports = app;
+} else {
+  app.listen(PORT, () => {
+    console.log(`\n🍫 Brownie Bliss Server running at http://localhost:${PORT}`);
+    console.log(`📋 Admin Panel: http://localhost:${PORT}/admin.html`);
+    console.log(`🛍️  Shop:        http://localhost:${PORT}/index.html\n`);
+  });
+}
