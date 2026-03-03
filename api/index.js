@@ -13,7 +13,7 @@ const PORT = process.env.PORT || 3000;
 // Replace with your MongoDB connection string.
 // Local:   mongodb://localhost:27017/brownie_bliss
 // Atlas:   mongodb+srv://<user>:<password>@cluster0.xxxxx.mongodb.net/brownie_bliss
-const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/brownie_bliss';
+const MONGO_URI = process.env.MONGO_URI;
 
 app.use(cors());
 app.use(express.json());
