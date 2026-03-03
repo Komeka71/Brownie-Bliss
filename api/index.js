@@ -10,28 +10,46 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // ─── CONFIG ────────────────────────────────────────────────────────────────────
-// Replace with your MongoDB connection string.
-// Local:   mongodb://localhost:27017/brownie_bliss
-// Atlas:   mongodb+srv://<user>:<password>@cluster0.xxxxx.mongodb.net/brownie_bliss
 const MONGO_URI = process.env.MONGO_URI;
 
 app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, '../public')));
 
-// ─── CONNECT TO MONGODB ────────────────────────────────────────────────────────
-mongoose.connect(MONGO_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-})
-  .then(() => {
+// ─── CACHED SERVERLESS CONNECTION ──────────────────────────────────────────────
+// On Vercel, functions are reused between requests. We cache the connection
+// so we don't reconnect on every single request (which causes timeouts).
+let isConnected = false;
+
+async function connectDB() {
+  if (isConnected && mongoose.connection.readyState === 1) return;
+
+  try {
+    await mongoose.connect(MONGO_URI, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+      serverSelectionTimeoutMS: 10000, // fail fast after 10s instead of hanging
+      socketTimeoutMS: 45000,
+    });
+    isConnected = true;
     console.log('✅ Connected to MongoDB');
-    seedProducts();
-  })
-  .catch(err => {
+    await seedProducts();
+  } catch (err) {
+    isConnected = false;
     console.error('❌ MongoDB connection error:', err.message);
-    console.error('   Make sure MongoDB is running or set MONGO_URI env variable.');
-  });
+    throw err;
+  }
+}
+
+// ─── MIDDLEWARE: connect before every request ───────────────────────────────────
+app.use(async (req, res, next) => {
+  try {
+    await connectDB();
+    next();
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Database connection failed. Please try again.' });
+  }
+});
 
 // ─── SCHEMAS ───────────────────────────────────────────────────────────────────
 const orderItemSchema = new mongoose.Schema({
