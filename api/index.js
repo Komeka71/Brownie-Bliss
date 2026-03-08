@@ -12,24 +12,28 @@ const PORT = process.env.PORT || 3000;
 // ─── CONFIG ────────────────────────────────────────────────────────────────────
 const MONGO_URI = process.env.MONGO_URI;
 
+// Disable buffering so mongoose throws immediately if not connected
+mongoose.set('bufferCommands', false);
+
 app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, '../public')));
 
 // ─── CACHED SERVERLESS CONNECTION ──────────────────────────────────────────────
-// On Vercel, functions are reused between requests. We cache the connection
-// so we don't reconnect on every single request (which causes timeouts).
 let isConnected = false;
 
 async function connectDB() {
   if (isConnected && mongoose.connection.readyState === 1) return;
 
+  if (!MONGO_URI) {
+    throw new Error('MONGO_URI environment variable is not set');
+  }
+
   try {
     await mongoose.connect(MONGO_URI, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-      serverSelectionTimeoutMS: 10000, // fail fast after 10s instead of hanging
+      serverSelectionTimeoutMS: 10000,
       socketTimeoutMS: 45000,
+      maxPoolSize: 1,
     });
     isConnected = true;
     console.log('✅ Connected to MongoDB');
@@ -47,7 +51,7 @@ app.use(async (req, res, next) => {
     await connectDB();
     next();
   } catch (err) {
-    res.status(500).json({ success: false, message: 'Database connection failed. Please try again.' });
+    res.status(500).json({ success: false, message: `Database connection failed: ${err.message}` });
   }
 });
 
