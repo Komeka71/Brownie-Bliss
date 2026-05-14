@@ -133,12 +133,31 @@ async function sendOTP() {
   checkoutState.name = name;
   checkoutState.phone = phone;
 
-  // Bypassing OTP
-  checkoutState.verified = true;
-  showCheckoutStep(3);
-  setTimeout(() => document.getElementById('custAddr')?.focus(), 100);
+  const btn = document.querySelector('#checkStep1 button[onclick="sendOTP()"]');
+  if (btn) { btn.disabled = true; btn.textContent = 'Sending...'; }
+
+  try {
+    const res = await fetch(`${API_BASE}/send-otp`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone })
+    });
+    const data = await res.json();
+
+    if (data.success) {
+      showCheckoutStep(2);
+      showToast('OTP sent! Check your phone.');
+    } else {
+      showToast(data.message || 'Failed to send OTP. Try again.');
+    }
+  } catch (e) {
+    showToast('Server error. Please try again.');
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = 'Send OTP'; }
+  }
 }
 
+//rest original code 
 function otpNext(input, idx) {
   input.value = input.value.replace(/\D/, '');
   if (input.value && idx < 5) {
