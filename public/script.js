@@ -1,4 +1,5 @@
 // --- CONFIG ---
+// API_BASE is defined in cart.js
 const API_BASE = '/api';
 
 // --- PRODUCTS DATA ---
@@ -278,8 +279,29 @@ async function sendOTP() {
     checkoutState.phone = phone;
 
     // Bypassing OTP
-    checkoutState.verified = true;
-    showCheckoutStep(3);
+    const btn = document.querySelector('#checkStep1 .hero-cta');
+if (btn) { btn.disabled = true; btn.textContent = 'Sending...'; }
+
+try {
+  const res = await fetch(`${API_BASE}/send-otp`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ phone })
+  });
+  const data = await res.json();
+
+  if (data.success) {
+    document.getElementById('otpPhoneDisp').textContent = '+91 ' + phone;
+    showCheckoutStep(2);
+    showToast('OTP sent! Check your phone.');
+  } else {
+    showToast(data.message || 'Failed to send OTP. Try again.');
+  }
+} catch (e) {
+  showToast('Server error. Please try again.');
+} finally {
+  if (btn) { btn.disabled = false; btn.textContent = 'Send Verification OTP →'; }
+ }
 }
 
 function otpNext(input, idx) {
