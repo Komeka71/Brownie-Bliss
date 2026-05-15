@@ -2378,12 +2378,13 @@ html.dark textarea::placeholder  { color: #8a6848; }
   height: 40px;
   border-radius: 50%;
   background: none;
-  border: 1.5px solid var(--brown-dark);
+  border: 2px solid var(--brown-dark);
   cursor: pointer;
   font-size: 15px;
   flex-shrink: 0;
   transition: all 0.22s ease;
   line-height: 1;
+  backface-visibility: hidden;
 }
 .theme-toggle-btn:hover              { background: var(--brown-dark); transform: rotate(22deg) scale(1.08); }
 html.dark .theme-toggle-btn          { border-color: var(--gold); }
