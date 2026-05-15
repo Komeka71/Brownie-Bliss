@@ -496,25 +496,52 @@ function updateBirthdayCake(flavor) {
     calculateBdayPrice();
 }
 function setCakeWeight(weight) {
+
     selectedWeight = weight;
+
+    const weightButtons = document.querySelectorAll(
+        'button[onclick^="setCakeWeight"]'
+    );
+
+    weightButtons.forEach(btn => {
+        btn.classList.remove('active');
+    });
+
     if (event && event.target) {
-        event.target.parentElement.querySelectorAll('button').forEach(b => b.classList.remove('active'));
         event.target.classList.add('active');
     }
+
     calculateBdayPrice();
 }
 
 function calculateBdayPrice() {
-    if (!bdayCakes[selectedFlavor]) return; // Wait until loaded
-    const finalPrice = bdayCakes[selectedFlavor].price * parseFloat(selectedWeight);
+
+    const basePrices = {
+        "0.5": 450,
+        "1.0": 850,
+        "1.5": 1250,
+        "2.0": 1600
+    };
+
+    const finalPrice = basePrices[selectedWeight];
+
     const priceEl = document.getElementById('cakePrice');
-    if (priceEl) priceEl.textContent = `₹ ${Math.round(finalPrice)}`;
+
+    if (priceEl) {
+        priceEl.textContent = `₹ ${finalPrice}`;
+    }
 }
 
 function addBirthdayToCart() {
     if (!bdayCakes[selectedFlavor]) return; // Wait until loaded
-    const finalPrice = bdayCakes[selectedFlavor].price * parseFloat(selectedWeight);
-    const msgInput = document.getElementById('cakeMessage');
+const basePrices = {
+    "0.5": 450,
+    "1.0": 850,
+    "1.5": 1250,
+    "2.0": 1600
+};
+
+const finalPrice = basePrices[selectedWeight];    const msgInput = document.getElementById('cakeMessage');
     const message = msgInput ? msgInput.value.trim() : '';
 
     const item = {
