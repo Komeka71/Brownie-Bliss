@@ -124,7 +124,6 @@
         <button class="filter-tab" onclick="filterProducts('cakes', this)">Cakes</button>
         <button class="filter-tab" onclick="filterProducts('brownies', this)">Brownies</button>
         <button class="filter-tab" onclick="filterProducts('desserts', this)">Desserts</button>
-        <button class="filter-tab" onclick="filterProducts('pastries', this)">Pastries</button>
         <button class="filter-tab" onclick="filterProducts('cookies', this)">Cookies</button>
       </div>
 
@@ -158,13 +157,30 @@
             style="display: block; font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: var(--gold); margin-bottom: 12px; font-weight: 700;">Select
             Flavor</label>
           <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;">
-            <button class="filter-tab active" onclick="updateBirthdayCake('Red Velvet')">Red Velvet</button>
-            <button class="filter-tab" onclick="updateBirthdayCake('Dutch Truffle')">Dutch Truffle</button>
-            <button class="filter-tab" onclick="updateBirthdayCake('Pineapple')">Pineapple</button>
-            <button class="filter-tab" onclick="updateBirthdayCake('Chocoholic')">Chocoholic</button>
-            <button class="filter-tab" onclick="updateBirthdayCake('Black Forest')">Black Forest</button>
-            <button class="filter-tab" onclick="updateBirthdayCake('Cheesecake')">Cheesecake</button>
-          </div>
+  <button class="filter-tab flavor-btn active" onclick="updateBirthdayCake('Red Velvet')">
+    Red Velvet
+  </button>
+
+  <button class="filter-tab flavor-btn" onclick="updateBirthdayCake('Dutch Truffle')">
+    Dutch Truffle
+  </button>
+
+  <button class="filter-tab flavor-btn" onclick="updateBirthdayCake('Pineapple')">
+    Pineapple
+  </button>
+
+  <button class="filter-tab flavor-btn" onclick="updateBirthdayCake('Chocoholic')">
+    Chocoholic
+  </button>
+
+  <button class="filter-tab flavor-btn" onclick="updateBirthdayCake('Black Forest')">
+    Black Forest
+  </button>
+
+  <button class="filter-tab flavor-btn" onclick="updateBirthdayCake('Cheesecake')">
+    Cheesecake
+  </button>
+</div>
         </div>
 
         <div style="margin-bottom: 30px;">
