@@ -447,17 +447,32 @@ let selectedWeight = '1.0';
 // bdayCakes object is now populated dynamically via loadProducts()
 
 function updateBirthdayCake(flavor) {
-    selectedFlavor = flavor;
-    const cakeImg = document.getElementById('birthdayCakeImg');
-    if (cakeImg) cakeImg.src = bdayCakes[flavor].img;
 
-    if (event && event.target) {
-        event.target.parentElement.querySelectorAll('button').forEach(b => b.classList.remove('active'));
-        event.target.classList.add('active');
+    if (!bdayCakes[flavor]) {
+        console.error("Cake flavor not found:", flavor);
+        return;
     }
+
+    selectedFlavor = flavor;
+
+    // Update image
+    const cakeImg = document.getElementById('birthdayCakeImg');
+
+    if (cakeImg) {
+        cakeImg.src = bdayCakes[flavor].img;
+    }
+
+    // Update active flavor button
+    document.querySelectorAll('.flavor-btn').forEach(btn => {
+        btn.classList.remove('active');
+
+        if (btn.textContent.trim() === flavor) {
+            btn.classList.add('active');
+        }
+    });
+
     calculateBdayPrice();
 }
-
 function setCakeWeight(weight) {
     selectedWeight = weight;
     if (event && event.target) {
