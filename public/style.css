@@ -2254,6 +2254,7 @@ a.logo {
   font-weight: 500;
 }
 
+
 /* TESTIMONIALS */
 
 .testimonials-section {
@@ -2300,7 +2301,7 @@ a.logo {
 }
 
 .testimonial-card {
-  width: 460px;
+  width: 360px;
   flex-shrink: 0;
 
   background:
@@ -2316,9 +2317,9 @@ a.logo {
   border-top:
     5px solid var(--gold);
 
-  border-radius: 28px;
+  border-radius: 18px;
 
-  padding: 42px;
+  padding: 28px;
 
   box-shadow:
     0 12px 35px rgba(0,0,0,0.06);
@@ -2350,7 +2351,7 @@ a.logo {
 .testimonial-card p {
   font-family: 'Cormorant Garamond', serif;
 
-  font-size: 30px;
+  font-size: 20px;
 
   line-height: 1.8;
 
@@ -2360,7 +2361,7 @@ a.logo {
 }
 
 .testimonial-card h4 {
-  font-size: 15px;
+  font-size: 13px;
 
   color: var(--brown-dark);
 
@@ -2394,41 +2395,12 @@ a.logo {
   }
 }
 
-.testimonial-card {
-  background: var(--white);
-  padding: 40px 30px;
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-sm);
-  transition: all 0.3s ease;
-  border-top: 4px solid var(--gold);
-}
-
 .testimonial-card:hover {
   transform: translateY(-6px);
   box-shadow: var(--shadow-lg);
 }
 
-.testimonial-stars {
-  color: var(--gold);
-  font-size: 18px;
-  margin-bottom: 18px;
-  letter-spacing: 2px;
-}
 
-.testimonial-card p {
-  font-family: 'Cormorant Garamond', serif;
-  font-size: 20px;
-  line-height: 1.8;
-  color: var(--text-mid);
-  margin-bottom: 24px;
-}
-
-.testimonial-card h4 {
-  font-size: 13px;
-  letter-spacing: 1px;
-  color: var(--brown-dark);
-  font-weight: 700;
-}
 
 /* RESPONSIVE */
 
@@ -3217,12 +3189,13 @@ html.dark textarea::placeholder  { color: #8a6848; }
   height: 40px;
   border-radius: 50%;
   background: none;
-  border: 1.5px solid var(--brown-dark);
+  border: 2px solid var(--brown-dark);
   cursor: pointer;
   font-size: 15px;
   flex-shrink: 0;
   transition: all 0.22s ease;
   line-height: 1;
+  backface-visibility: hidden;
 }
 .theme-toggle-btn:hover              { background: var(--brown-dark); transform: rotate(22deg) scale(1.08); }
 html.dark .theme-toggle-btn          { border-color: var(--gold); }
