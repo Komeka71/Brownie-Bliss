@@ -1,5 +1,5 @@
 // --- CONFIG ---
-// API_BASE is defined in cart.js
+
 const API_BASE = '/api';
 
 // --- PRODUCTS DATA ---
@@ -398,7 +398,7 @@ async function placeOrder() {
             saveCart();
             updateCartUI();
             closeCheckout();
-            showToast('🎉 Order placed successfully!');
+            showToast(`🎉 Order ${orderId} placed! <a href="track.html?id=${orderId}" class="toast-track-link">Track Order</a>`);
         } else {
             showToast('Failed to save order. Please try again.');
         }
@@ -521,13 +521,97 @@ function addBirthdayToCart() {
 function showToast(msg) {
     const toast = document.getElementById('toast');
     if (!toast) return;
-    toast.textContent = msg;
+    toast.innerHTML = msg;
     toast.classList.add('show');
-    setTimeout(() => toast.classList.remove('show'), 3000);
+    setTimeout(() => toast.classList.remove('show'), 5000);
 }
 
 // Initialization
 document.addEventListener('DOMContentLoaded', () => {
     updateCartUI();
     loadProducts(); // Load and then automatically re-render main grid/birthday block
+
+    // Track Order auto-fill if on track.html
+    const urlParams = new URLSearchParams(window.location.search);
+    const idParam = urlParams.get('id');
+    const input = document.getElementById('orderIdInput');
+    if (idParam && input) {
+        input.value = idParam;
+        trackOrder(idParam);
+    }
 });
+
+// --- TRACK ORDER LOGIC ---
+async function trackOrder(id) {
+    const orderIdInput = document.getElementById('orderIdInput');
+    const trackError = document.getElementById('trackError');
+    if (!orderIdInput) return;
+
+    if (trackError) trackError.style.display = 'none';
+
+    const orderId = id || orderIdInput.value.trim();
+    if (!orderId) {
+        if (trackError) {
+            trackError.textContent = 'Please enter an Order ID';
+            trackError.style.display = 'block';
+        }
+        return;
+    }
+
+    try {
+        const res = await fetch(`${API_BASE}/orders/${orderId}`);
+        const data = await res.json();
+        if (data.success || data.order) {
+            renderOrderDetails(data.order || data);
+        } else {
+            if (trackError) {
+                trackError.textContent = data.error || 'Order not found';
+                trackError.style.display = 'block';
+            }
+            document.getElementById('result').style.display = 'none';
+        }
+    } catch (e) {
+        if (trackError) {
+            trackError.textContent = 'Error fetching order. Make sure the server is running!';
+            trackError.style.display = 'block';
+        }
+        document.getElementById('result').style.display = 'none';
+    }
+}
+
+function renderOrderDetails(order) {
+    const resOrderId = document.getElementById('resOrderId');
+    if (!resOrderId) return; // Not on track page
+
+    resOrderId.textContent = order.id || order.order_id;
+
+    const status = order.status || 'pending';
+    document.getElementById('resStatus').textContent = status.toUpperCase();
+    document.getElementById('resStatus').className = `status-badge status-${status.toLowerCase()}`;
+
+    if (order.created_at) {
+        document.getElementById('resDate').textContent = new Date(order.created_at).toLocaleString();
+    } else {
+        document.getElementById('resDate').textContent = 'N/A';
+    }
+
+    let itemsHtml = '';
+    try {
+        const items = typeof order.items === 'string' ? JSON.parse(order.items) : order.items;
+        itemsHtml = items.map(i => {
+            const itemTotal = (i.price && i.qty) ? i.price * i.qty : i.price || 0;
+            const priceHtml = itemTotal ? `₹${itemTotal.toLocaleString('en-IN')}` : '';
+            return `<tr>
+                        <td>${i.emoji || ''} ${i.name} × ${i.qty}</td>
+                        <td class="text-right track-item-price">${priceHtml}</td>
+                    </tr>`;
+        }).join('');
+    } catch (e) {
+        itemsHtml = `<tr><td colspan="2">${order.items}</td></tr>`;
+    }
+
+    document.getElementById('resItems').innerHTML = itemsHtml;
+    document.getElementById('resTotal').textContent = order.total;
+
+    document.getElementById('result').style.display = 'block';
+}
