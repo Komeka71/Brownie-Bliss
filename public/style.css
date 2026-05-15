@@ -3092,3 +3092,18 @@ a.logo {
     grid-template-columns: 1fr;
   }
 }
+
+/* Admin Panel Additions */
+.panel-title-group {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.btn-export {
+  padding: 8px 16px !important;
+  font-size: 13px !important;
+  border-radius: 6px !important;
+  background: var(--gold) !important;
+  color: var(--brown-dark) !important;
+}

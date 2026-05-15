@@ -90,7 +90,10 @@
       <!-- ORDERS TABLE -->
       <div class="orders-panel">
         <div class="panel-head">
-          <h2>All Orders</h2>
+          <div class="panel-title-group">
+            <h2>All Orders</h2>
+            <button onclick="exportCSV()" class="btn-confirm btn-export">Export CSV</button>
+          </div>
           <div class="orders-filter">
             <button class="of-btn active" onclick="filterOrders('all',this)">All</button>
             <button class="of-btn" onclick="filterOrders('pending',this)">⏳ Pending</button>
@@ -548,6 +551,50 @@
   `);
       win.document.close();
     }
+
+    //export csv for orders
+    async function exportCSV() {
+      try {
+        const res = await fetch('/api/orders');
+        const data = await res.json();
+        if (data.success) {
+          // Just extracting the array of data
+          const ordersDataArray = data.orders.map(o => ({
+            orderId: o.order_id,
+            date: o.created_at,
+            price: o.total,
+            customer: o.customer_name,
+            phone: o.phone,
+            items: o.items,
+            status: o.status,
+            payment_status: o.payment_status
+          }));
+          let csv = `Order ID,Date,Price,Customer,Phone,Items,Status,Payment Status\n`;
+          ordersDataArray.forEach((order) => {
+            const itemsList = typeof order.items === 'string' ? JSON.parse(order.items) : order.items;
+            const itemsStr = `"${itemsList.map(i => `${i.name} x${i.qty}`).join(', ')}"`;
+            csv += `${order.orderId},${order.date},${order.price},${order.customer},${order.phone},${itemsStr},${order.status},${order.payment_status}\n`;
+          });
+
+          //create blob
+          const blob = new Blob([csv], { type: "text/csv" });
+          //create download link
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = "orders.csv";
+
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          window.URL.revokeObjectURL(url);
+          return ordersDataArray;
+        }
+      } catch (e) {
+        console.error('Error fetching orders for export', e);
+      }
+    }
+
 
     // ─── PRODUCTS ──────────────────────────────────────────────────────────────────
     async function loadProducts() {
