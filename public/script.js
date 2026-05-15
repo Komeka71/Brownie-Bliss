@@ -522,10 +522,19 @@ document.addEventListener('DOMContentLoaded', () => {
 // --- TRACK ORDER LOGIC ---
 async function trackOrder(id) {
     const orderIdInput = document.getElementById('orderIdInput');
+    const trackError = document.getElementById('trackError');
     if (!orderIdInput) return;
 
+    if (trackError) trackError.style.display = 'none';
+
     const orderId = id || orderIdInput.value.trim();
-    if (!orderId) return alert('Please enter an Order ID');
+    if (!orderId) {
+        if (trackError) {
+            trackError.textContent = 'Please enter an Order ID';
+            trackError.style.display = 'block';
+        }
+        return;
+    }
 
     try {
         const res = await fetch(`${API_BASE}/orders/${orderId}`);
@@ -533,11 +542,17 @@ async function trackOrder(id) {
         if (data.success || data.order) {
             renderOrderDetails(data.order || data);
         } else {
-            alert(data.error || 'Order not found');
+            if (trackError) {
+                trackError.textContent = data.error || 'Order not found';
+                trackError.style.display = 'block';
+            }
             document.getElementById('result').style.display = 'none';
         }
     } catch (e) {
-        alert('Error fetching order. Make sure the server is running!');
+        if (trackError) {
+            trackError.textContent = 'Error fetching order. Make sure the server is running!';
+            trackError.style.display = 'block';
+        }
         document.getElementById('result').style.display = 'none';
     }
 }
