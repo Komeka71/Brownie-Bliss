@@ -4,7 +4,16 @@ const API_BASE = '/api';
 const BUSINESS_WHATSAPP = '918072596340';
 
 // ─── CART STATE ────────────────────────────────────────────────────────────────
-let cart = JSON.parse(localStorage.getItem('bb_cart') || '[]');
+let cart = [];
+
+try {
+  cart = JSON.parse(localStorage.getItem('bb_cart')) || [];
+} catch (error) {
+  console.error("Invalid cart data in localStorage");
+  localStorage.removeItem('bb_cart');
+  cart = [];
+}
+
 let checkoutState = { name: '', phone: '', address: '', city: '', pincode: '', verified: false, currentStep: 1 };
 
 function saveCart() { localStorage.setItem('bb_cart', JSON.stringify(cart)); }
