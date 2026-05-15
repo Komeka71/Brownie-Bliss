@@ -240,7 +240,7 @@ async function placeOrder() {
       updateCartBadge();
       closeCheckout();
 
-      showToast(`🎉 Order ${orderId} placed!`);
+      showToast(`🎉 Order ${orderId} placed! <a href="/track.html?id=${orderId}" class="toast-track-link">Track Order</a>`);
     } else {
       showToast('Failed to place order. Try again.');
     }
@@ -270,10 +270,10 @@ let toastTimer;
 function showToast(msg) {
   const t = document.getElementById('toast');
   if (!t) return;
-  t.textContent = msg;
+  t.innerHTML = msg;
   t.classList.add('show');
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => t.classList.remove('show'), 3000);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 5000);
 }
 
 // Init
