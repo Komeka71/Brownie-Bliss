@@ -3,6 +3,7 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const path = require('path');
 const axios = require('axios');
+const jwt = require('jsonwebtoken');
 require('dotenv').config();
 const serverless = require('serverless-http');
 
@@ -11,6 +12,10 @@ const PORT = process.env.PORT || 3000;
 
 // ─── CONFIG ────────────────────────────────────────────────────────────────────
 const MONGO_URI = process.env.MONGO_URI;
+const ADMIN_USERNAME = process.env.ADMIN_USERNAME;
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
+const ADMIN_JWT_SECRET = process.env.ADMIN_JWT_SECRET;
+const ADMIN_JWT_EXPIRES_IN = process.env.ADMIN_JWT_EXPIRES_IN || '2h';
 
 // Disable buffering so mongoose throws immediately if not connected
 mongoose.set('bufferCommands', false);
@@ -145,6 +150,53 @@ function generateOrderId() {
 function generateOTP() {
   return String(Math.floor(100000 + Math.random() * 900000));
 }
+//─────────────────────JWT BASED AUTHENTICATION───────────────────────────────────────────
+
+function adminAuth(req, res, next) {
+  if (!ADMIN_JWT_SECRET) {
+    return res.status(500).json({ success: false, message: 'Admin auth not configured' });
+  }
+
+  const authHeader = req.headers.authorization || '';
+  const [scheme, token] = authHeader.split(' ');
+
+  if (scheme !== 'Bearer' || !token) {
+    return res.status(401).json({ success: false, message: 'Missing or invalid authorization token' });
+  }
+
+  try {
+    const payload = jwt.verify(token, ADMIN_JWT_SECRET);
+    req.admin = payload;
+    return next();
+  } catch (err) {
+    return res.status(401).json({ success: false, message: 'Invalid or expired token' });
+  }
+}
+
+// ─── ADMIN AUTH ROUTES ─────────────────────────────────────────────────────────
+app.post('/api/admin/login', (req, res) => {
+  const { username, password } = req.body || {};
+
+  if (!ADMIN_USERNAME || !ADMIN_PASSWORD || !ADMIN_JWT_SECRET) {
+    return res.status(500).json({ success: false, message: 'Admin auth not configured' });
+  }
+
+  if (!username || !password) {
+    return res.status(400).json({ success: false, message: 'Username and password are required' });
+  }
+
+  if (username !== ADMIN_USERNAME || password !== ADMIN_PASSWORD) {
+    return res.status(401).json({ success: false, message: 'Invalid credentials' });
+  }
+
+  const token = jwt.sign(
+    { username: ADMIN_USERNAME },
+    ADMIN_JWT_SECRET,
+    { expiresIn: ADMIN_JWT_EXPIRES_IN }
+  );
+
+  return res.json({ success: true, token, expiresIn: ADMIN_JWT_EXPIRES_IN });
+});
 
 // ─── OTP ROUTES ────────────────────────────────────────────────────────────────
 // Send OTP  (demo — shows OTP in response; in production wire up MSG91 / Twilio)
@@ -235,7 +287,7 @@ app.get('/api/products', async (req, res) => {
 });
 
 // Add new product
-app.post('/api/products', async (req, res) => {
+app.post('/api/products', adminAuth, async (req, res) => {
   try {
     const { type, name, category, price, emoji, img } = req.body;
 
@@ -269,7 +321,7 @@ app.post('/api/products', async (req, res) => {
 });
 
 // Update product details
-app.patch('/api/products/:id', async (req, res) => {
+app.patch('/api/products/:id', adminAuth, async (req, res) => {
   try {
     const { price, name, img } = req.body;
 
@@ -307,7 +359,7 @@ app.patch('/api/products/:id', async (req, res) => {
 });
 
 // Delete product
-app.delete('/api/products/:id', async (req, res) => {
+app.delete('/api/products/:id', adminAuth, async (req, res) => {
   try {
     const product = await Product.findByIdAndDelete(req.params.id);
     if (!product) {
@@ -322,7 +374,7 @@ app.delete('/api/products/:id', async (req, res) => {
 
 // ─── ORDER ROUTES ──────────────────────────────────────────────────────────────
 // Create order
-app.post('/api/orders', async (req, res) => {
+app.post('/api/orders', adminAuth, async (req, res) => {
   try {
     const { customer_name, phone, address, city, pincode, items, total } = req.body;
 
@@ -380,7 +432,7 @@ app.get('/api/orders/:orderId', async (req, res) => {
 });
 
 // Confirm payment (admin action)
-app.patch('/api/orders/:orderId/confirm-payment', async (req, res) => {
+app.patch('/api/orders/:orderId/confirm-payment', adminAuth, async (req, res) => {
   try {
     const { notes } = req.body;
     const order = await Order.findOneAndUpdate(
@@ -401,7 +453,7 @@ app.patch('/api/orders/:orderId/confirm-payment', async (req, res) => {
 });
 
 // Update order status
-app.patch('/api/orders/:orderId/status', async (req, res) => {
+app.patch('/api/orders/:orderId/status', adminAuth, async (req, res) => {
   try {
     const { status } = req.body;
     const order = await Order.findOneAndUpdate(

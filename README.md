@@ -43,6 +43,32 @@ Format: country code + number, no + or spaces. E.g., `919876543210`
 
 ### 3. Start the Server
 ```bash
+### Environment variables
+
+Create a `.env` file in the project root to configure admin credentials, JWT signing, and the database connection. Make sure there are no spaces around `=` and do not wrap values in quotes.
+
+Required keys:
+- `ADMIN_USERNAME` — admin username used to log in to the admin panel
+- `ADMIN_PASSWORD` — admin password
+- `ADMIN_JWT_SECRET` — long random secret used to sign JWTs (required)
+- `MONGO_URI` — MongoDB connection string (required)
+
+Optional keys:
+- `ADMIN_JWT_EXPIRES_IN` — JWT expiry (e.g. `2h`, defaults to `2h`)
+- `FAST2SMS_API_KEY` — optional SMS provider API key used for OTP sending
+
+Example `.env`:
+```
+ADMIN_USERNAME=admin
+ADMIN_PASSWORD=changeme
+ADMIN_JWT_SECRET=replace_with_long_random_secret
+ADMIN_JWT_EXPIRES_IN=2h
+MONGO_URI=your_mongodb_uri_here
+FAST2SMS_API_KEY=your_fast2sms_api_key_here
+```
+
+After editing `.env`, restart the server so the new values are picked up.
+
 npm start
 ```
 or for auto-reload during development:
