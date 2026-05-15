@@ -2,6 +2,20 @@
 // API_BASE is defined in cart.js
 const API_BASE = '/api';
 
+// --- THEME ---
+function applyTheme(theme) {
+    document.documentElement.classList.toggle('dark', theme === 'dark');
+    const icon = document.getElementById('themeIcon');
+    if (icon) icon.textContent = theme === 'dark' ? '\u2600\uFE0F' : '\uD83C\uDF19';
+}
+
+function toggleTheme() {
+    const isDark = document.documentElement.classList.contains('dark');
+    const next = isDark ? 'light' : 'dark';
+    localStorage.setItem('bb_theme', next);
+    applyTheme(next);
+}
+
 // --- PRODUCTS DATA ---
 let products = [];
 let bdayCakes = {};
@@ -543,6 +557,9 @@ function showToast(msg) {
 
 // Initialization
 document.addEventListener('DOMContentLoaded', () => {
+    // Sync toggle icon with current theme (class was set by blocking <script> in <head>)
+    applyTheme(localStorage.getItem('bb_theme') || 'light');
+
     updateCartUI();
     loadProducts(); // Load and then automatically re-render main grid/birthday block
 
