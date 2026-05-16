@@ -1,5 +1,5 @@
 // --- CONFIG ---
-// API_BASE is defined in cart.js
+
 const API_BASE = '/api';
 
 // --- THEME ---
