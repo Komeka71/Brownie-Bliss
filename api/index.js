@@ -6,6 +6,7 @@ const axios = require('axios');
 const jwt = require('jsonwebtoken');
 require('dotenv').config();
 const serverless = require('serverless-http');
+const adminAuth = require('../middlewares/adminAuth');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -152,26 +153,6 @@ function generateOTP() {
 }
 //─────────────────────JWT BASED AUTHENTICATION───────────────────────────────────────────
 
-function adminAuth(req, res, next) {
-  if (!ADMIN_JWT_SECRET) {
-    return res.status(500).json({ success: false, message: 'Admin auth not configured' });
-  }
-
-  const authHeader = req.headers.authorization || '';
-  const [scheme, token] = authHeader.split(' ');
-
-  if (scheme !== 'Bearer' || !token) {
-    return res.status(401).json({ success: false, message: 'Missing or invalid authorization token' });
-  }
-
-  try {
-    const payload = jwt.verify(token, ADMIN_JWT_SECRET);
-    req.admin = payload;
-    return next();
-  } catch (err) {
-    return res.status(401).json({ success: false, message: 'Invalid or expired token' });
-  }
-}
 
 // ─── ADMIN AUTH ROUTES ─────────────────────────────────────────────────────────
 app.post('/api/admin/login', (req, res) => {
@@ -374,7 +355,7 @@ app.delete('/api/products/:id', adminAuth, async (req, res) => {
 
 // ─── ORDER ROUTES ──────────────────────────────────────────────────────────────
 // Create order
-app.post('/api/orders', adminAuth, async (req, res) => {
+app.post('/api/orders', async (req, res) => {
   try {
     const { customer_name, phone, address, city, pincode, items, total } = req.body;
 
